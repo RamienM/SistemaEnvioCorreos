@@ -2,7 +2,6 @@ package org.secr.sistemaenviocorreos.service;
 
 import jakarta.mail.MessagingException;
 import lombok.AllArgsConstructor;
-import org.eclipse.angus.mail.util.MailConnectException;
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.mail.MailAuthenticationException;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.logging.Level;

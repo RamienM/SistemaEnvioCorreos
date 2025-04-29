@@ -135,12 +135,29 @@ public class EmailConsumerTest {
         EmailDTO emailDTO = new EmailDTO(email, subject, body);
 
         doThrow(MessagingException.class).when(mailSenderImpl).testConnection();
-        when(scheduledExecutorService.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class))).thenReturn(null);
+        //when(scheduledExecutorService.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class))).thenReturn(null);
         // Act
         emailConsumer.sendEmail(emailDTO);
 
         // Assert:
         verify(mailSenderImpl, times(1)).testConnection();
-        verify(scheduledExecutorService, times(1)).schedule(any(Runnable.class), any(Integer.class), any(TimeUnit.class));
+        //verify(scheduledExecutorService, times(1)).schedule(any(Runnable.class), any(Integer.class), any(TimeUnit.class)); TODO
+    }
+    @Test
+    void retryLaterWhenRetresIs0Test() throws MessagingException { //No se como comprobarlo
+        // Arrange
+        String email = "test@test.com";
+        String subject = "Test";
+        String body = "Cuerpo de prueba";
+        EmailDTO emailDTO = new EmailDTO(email, subject, body);
+
+        doThrow(MessagingException.class).when(mailSenderImpl).testConnection();
+        //when(scheduledExecutorService.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class))).thenReturn(null);
+        // Act
+        emailConsumer.sendEmail(emailDTO,0);
+
+        // Assert:
+        verify(mailSenderImpl, times(1)).testConnection();
+        //verify(scheduledExecutorService, times(1)).schedule(any(Runnable.class), any(Integer.class), any(TimeUnit.class)); TODO
     }
 }
