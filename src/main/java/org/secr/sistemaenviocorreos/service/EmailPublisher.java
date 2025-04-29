@@ -3,8 +3,6 @@ package org.secr.sistemaenviocorreos.service;
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.MessageDeliveryMode;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,8 +15,6 @@ public class EmailPublisher {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
-    @Autowired
-    private CachingConnectionFactory connectionFactory;
 
     private static final Logger logger = Logger.getLogger(EmailPublisher.class.getName());
 
