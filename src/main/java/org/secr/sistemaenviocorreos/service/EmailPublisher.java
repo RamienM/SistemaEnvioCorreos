@@ -1,6 +1,7 @@
 package org.secr.sistemaenviocorreos.service;
 
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
+import org.secr.sistemaenviocorreos.service.interfaces.PublisherInterface;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.logging.Logger;
 
 @Service
-public class EmailPublisher {
+public class EmailPublisher implements PublisherInterface {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -30,6 +31,7 @@ public class EmailPublisher {
      * @param emailDTO          Objeto de transferencia Email
      * @throws AmqpException    Excepción lanzada cuando hay un problema con el encolamiento de un mensaje
      */
+    @Override
     public void publish(EmailDTO emailDTO) throws AmqpException {
         logger.info("Encolando correo...");
         rabbitTemplate.convertAndSend(exchange, routingKey, emailDTO, message -> {

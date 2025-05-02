@@ -1,4 +1,4 @@
-package org.secr.sistemaenviocorreos.api_rest;
+package org.secr.sistemaenviocorreos.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -20,8 +20,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(controllers = EmailAPI.class)
-public class EmailAPITest {
+@WebMvcTest(controllers = EmailController.class)
+public class EmailControllerTest {
 
     @MockitoBean
     private EmailPublisher emailPublisher;

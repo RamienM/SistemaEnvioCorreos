@@ -1,4 +1,4 @@
-package org.secr.sistemaenviocorreos.api_rest;
+package org.secr.sistemaenviocorreos.controller;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -17,10 +17,10 @@ import java.util.logging.Logger;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/email")
-public class EmailAPI {
+public class EmailController {
 
     private final EmailPublisher emailPublisher;
-    private static final Logger logger = Logger.getLogger(EmailAPI.class.getName());
+    private static final Logger logger = Logger.getLogger(EmailController.class.getName());
 
     @PostMapping("/send")
     public ResponseEntity<Void> send(@Valid  @RequestBody EmailDTO emailDTO) {

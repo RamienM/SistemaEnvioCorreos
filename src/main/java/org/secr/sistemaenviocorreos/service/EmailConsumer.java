@@ -2,6 +2,7 @@ package org.secr.sistemaenviocorreos.service;
 
 import jakarta.mail.MessagingException;
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
+import org.secr.sistemaenviocorreos.service.interfaces.ConsumerInterface;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +20,7 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 
 @Service
-public class EmailConsumer {
+public class EmailConsumer implements ConsumerInterface {
 
     private static final Logger logger = Logger.getLogger(EmailConsumer.class.getName());
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -41,13 +42,15 @@ public class EmailConsumer {
      * se reintentará el envio haciendo uso de un Scheduler.
      * @param emailDTO Correo que se desea mandar
      */
+    @Override
     @RabbitListener(queues = "${rabbitmq.queue}")
     public void sendEmail(EmailDTO emailDTO) {
         JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) mailSender;
         try {
-            mailSenderImpl.testConnection();
+            mailSenderImpl.testConnection(); //Prueba de conexion con el servidor SMTP
             logger.info("Conexión SMTP exitosa.");
 
+            //Preparamos el mail
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(sender);
             message.setTo(emailDTO.email());
