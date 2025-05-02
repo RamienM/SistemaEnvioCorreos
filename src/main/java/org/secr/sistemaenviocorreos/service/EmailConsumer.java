@@ -1,9 +1,10 @@
 package org.secr.sistemaenviocorreos.service;
 
 import jakarta.mail.MessagingException;
-import lombok.AllArgsConstructor;
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
@@ -18,29 +19,37 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 
 @Service
-@AllArgsConstructor
 public class EmailConsumer {
 
     private static final Logger logger = Logger.getLogger(EmailConsumer.class.getName());
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    private final JavaMailSender mailSender;
-    private JavaMailSenderImpl mailSenderImpl;
+    @Autowired
+    private JavaMailSender mailSender;
 
+    @Value("${spring.mail.sender}")
+    private String sender;
+
+    @Value("${spring.retry.send.delay}")
+    private Integer delay;
+
+    @Value("${spring.retry.send.tries}")
+    private Integer tries;
+
+    /**
+     * Lectura de correos de una cola de RabbitMQ. Estos correos se envian por un SMTP, en caso de que haya cualquier error
+     * se reintentará el envio haciendo uso de un Scheduler.
+     * @param emailDTO Correo que se desea mandar
+     */
     @RabbitListener(queues = "${rabbitmq.queue}")
     public void sendEmail(EmailDTO emailDTO) {
-        sendEmail(emailDTO, 3); // Empieza con 3 intentos
-    }
-
-    //Los intetos permite evitar los reintentos infinitos
-    public void sendEmail(EmailDTO emailDTO, int retriesLeft) {
-        mailSenderImpl = (JavaMailSenderImpl) mailSender;
+        JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) mailSender;
         try {
             mailSenderImpl.testConnection();
             logger.info("Conexión SMTP exitosa.");
 
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("rubenduque12345@gmail.com");
+            message.setFrom(sender);
             message.setTo(emailDTO.email());
             message.setSubject(emailDTO.subject());
             message.setText(emailDTO.message());
@@ -51,7 +60,8 @@ public class EmailConsumer {
 
         } catch (MessagingException e) {
             logger.log(Level.WARNING, "No se pudo conectar al servidor SMTP: ", e);
-            retryLater(emailDTO, retriesLeft - 1);
+            tries -= 1;
+            retryLater(emailDTO);
         } catch (MailAuthenticationException e) {
             logger.log(Level.SEVERE, "Error de autenticación al enviar el correo: ", e);
         } catch (MailSendException e) {
@@ -59,18 +69,17 @@ public class EmailConsumer {
         }
     }
 
-    private void retryLater(EmailDTO emailDTO, int retriesLeft) {
-        if (retriesLeft <= 0) {
+    //Función que permite el reenvio de correos cada cierto tiempo
+    private void retryLater(EmailDTO emailDTO) {
+        if (tries <= 0) {
             logger.warning("Se agotaron los reintentos para: " + emailDTO.email());
             return;
         }
 
         Runnable retryTask = () -> {
-            logger.info("Reintentando envío de correo a: " + emailDTO.email() + ". Intentos restantes: " + retriesLeft);
-            sendEmail(emailDTO, retriesLeft);
-        };
+            logger.info("Reintentando envío de correo a: " + emailDTO.email() + ". Intentos restantes: " + tries);
+            sendEmail(emailDTO);};
 
-        int delaySeconds = 30;
-        scheduler.schedule(retryTask, delaySeconds, TimeUnit.SECONDS);
+        scheduler.schedule(retryTask, delay, TimeUnit.SECONDS);
     }
 }

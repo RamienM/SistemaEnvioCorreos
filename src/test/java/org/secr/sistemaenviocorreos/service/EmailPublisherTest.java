@@ -6,7 +6,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -45,31 +44,4 @@ public class EmailPublisherTest {
         verify(rabbitTemplate, times(1)).convertAndSend(anyString(), anyString(), any(EmailDTO.class), any(MessagePostProcessor.class));
     }
 
-    @Test
-    void PublishConnectionFailTest() {
-        // Given
-        String email = "test@test.com";
-        String subject = "Test";
-        String body = "Cuerpo de prueba";
-
-        EmailDTO emailDTO = new EmailDTO(email, subject, body);
-
-        String exchange = "mi-exchange";
-        String routingKey = "mi-routing-key";
-
-
-        // Sirve para los @Value
-        ReflectionTestUtils.setField(emailPublisher, "exchange", exchange);
-        ReflectionTestUtils.setField(emailPublisher, "routingKey", routingKey);
-
-
-
-        doThrow(AmqpException.class).when(rabbitTemplate).convertAndSend(anyString(), anyString(), any(EmailDTO.class), any(MessagePostProcessor.class));
-
-        // When
-        emailPublisher.publish(emailDTO);
-
-        // Then
-        verify(rabbitTemplate, times(1)).convertAndSend(anyString(), anyString(), any(EmailDTO.class), any(MessagePostProcessor.class));
-    }
 }

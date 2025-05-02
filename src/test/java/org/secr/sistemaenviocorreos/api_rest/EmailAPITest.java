@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
 import org.secr.sistemaenviocorreos.service.EmailPublisher;
+import org.springframework.amqp.AmqpException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -115,4 +116,26 @@ public class EmailAPITest {
         //Assert
         resp.andExpect(status().is(400));
     }
+    @Test
+    void sendEmailWhenAmqpExceptionTest() throws Exception {
+        //Arrange
+        int statusError= 500;
+
+        String email = "test@test.com";
+        String subject = "Test";
+        String body = "Test";
+        EmailDTO emailDTO = new EmailDTO(email, subject, body);
+
+        doThrow(AmqpException.class).when(emailPublisher).publish(any(EmailDTO.class));
+
+        //Act
+        ResultActions resp = mockMvc.perform(post("/email/send")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(emailDTO)));
+
+        //Assert
+        resp.andExpect(status().is(statusError));
+        verify(emailPublisher,times(1)).publish(any(EmailDTO.class));
+    }
+
 }

@@ -24,17 +24,18 @@ public class EmailPublisher {
     @Value("${rabbitmq.routing-key}")
     private String routingKey;
 
+    /**
+     * Publicación de un mensaje a una cola RabbitMQ. El mensaje se guarda de manera persistente para que en caso de caida
+     * se recupere.
+     * @param emailDTO          Objeto de transferencia Email
+     * @throws AmqpException    Excepción lanzada cuando hay un problema con el encolamiento de un mensaje
+     */
     public void publish(EmailDTO emailDTO) throws AmqpException {
-        try {
-            logger.info("Encolando correo...");
-            rabbitTemplate.convertAndSend(exchange, routingKey, emailDTO, message -> {
-                message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-                return message;
-            });
-            logger.info("Correo " + emailDTO.email() + " encolado correctamente");
-        }catch (AmqpException e) {
-            logger.warning("Error al encolar el correo.");
-        }
+        logger.info("Encolando correo...");
+        rabbitTemplate.convertAndSend(exchange, routingKey, emailDTO, message -> {
+            message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+            return message;
+        });
+        logger.info("Correo " + emailDTO.email() + " encolado correctamente");
     }
-
 }

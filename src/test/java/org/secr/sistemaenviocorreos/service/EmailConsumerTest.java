@@ -13,11 +13,10 @@ import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
-
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -25,35 +24,12 @@ import static org.mockito.Mockito.*;
 public class EmailConsumerTest {
     @Mock
     private JavaMailSenderImpl mailSenderImpl;
-    @Mock
-    private ScheduledExecutorService scheduledExecutorService;
     @InjectMocks
     private EmailConsumer emailConsumer;
 
 
     @Captor
     private ArgumentCaptor<SimpleMailMessage> messageCaptor; //RECOMENDADO POR GPT
-
-    @Test
-    void sendEmailBasicTest(){
-        //Arrange
-        String email = "test@test.com";
-        String subject = "Test";
-        String body = "Cuerpo de prueba";
-        EmailDTO emailDTO = new EmailDTO(email, subject, body);
-
-        doNothing().when(mailSenderImpl).send(any(SimpleMailMessage.class));
-
-        //Act
-        emailConsumer.sendEmail(emailDTO);
-
-        //Assert
-        verify(mailSenderImpl, times(1)).send(messageCaptor.capture());
-        SimpleMailMessage sent = messageCaptor.getValue();
-        assertEquals("test@test.com", sent.getTo()[0]);
-        assertEquals("Test", sent.getSubject());
-        assertEquals("Cuerpo de prueba", sent.getText());
-    }
 
     @Test
     void sendEmailTest(){
@@ -63,6 +39,14 @@ public class EmailConsumerTest {
         String body = "Cuerpo de prueba";
         EmailDTO emailDTO = new EmailDTO(email, subject, body);
 
+
+        String sender = "test@test.com";
+        Integer retriesLeft = 3;
+        Integer delay = 30;
+        ReflectionTestUtils.setField(emailConsumer, "sender", sender);
+        ReflectionTestUtils.setField(emailConsumer, "delay", delay);
+        ReflectionTestUtils.setField(emailConsumer, "tries", retriesLeft);
+
         doNothing().when(mailSenderImpl).send(any(SimpleMailMessage.class));
 
         //Act
@@ -71,6 +55,7 @@ public class EmailConsumerTest {
         //Assert
         verify(mailSenderImpl, times(1)).send(messageCaptor.capture());
         SimpleMailMessage sent = messageCaptor.getValue();
+        assertNotNull(sent.getTo());
         assertEquals("test@test.com", sent.getTo()[0]);
         assertEquals("Test", sent.getSubject());
         assertEquals("Cuerpo de prueba", sent.getText());
@@ -82,6 +67,13 @@ public class EmailConsumerTest {
         String subject = "Test";
         String body = "Cuerpo de prueba";
         EmailDTO emailDTO = new EmailDTO(email, subject, body);
+
+        String sender = "test@test.com";
+        Integer retriesLeft = 3;
+        Integer delay = 30;
+        ReflectionTestUtils.setField(emailConsumer, "sender", sender);
+        ReflectionTestUtils.setField(emailConsumer, "delay", delay);
+        ReflectionTestUtils.setField(emailConsumer, "tries", retriesLeft);
 
         doThrow(MailAuthenticationException.class).when(mailSenderImpl).send(any(SimpleMailMessage.class));
 
@@ -100,6 +92,13 @@ public class EmailConsumerTest {
         String body = "Cuerpo de prueba";
         EmailDTO emailDTO = new EmailDTO(email, subject, body);
 
+        String sender = "test@test.com";
+        Integer retriesLeft = 3;
+        Integer delay = 30;
+        ReflectionTestUtils.setField(emailConsumer, "sender", sender);
+        ReflectionTestUtils.setField(emailConsumer, "delay", delay);
+        ReflectionTestUtils.setField(emailConsumer, "tries", retriesLeft);
+
         doThrow(MailSendException.class).when(mailSenderImpl).send(any(SimpleMailMessage.class));
 
         //Act
@@ -116,6 +115,13 @@ public class EmailConsumerTest {
         String subject = "Test";
         String body = "Cuerpo de prueba";
         EmailDTO emailDTO = new EmailDTO(email, subject, body);
+
+        String sender = "test@test.com";
+        Integer retriesLeft = 3;
+        Integer delay = 30;
+        ReflectionTestUtils.setField(emailConsumer, "sender", sender);
+        ReflectionTestUtils.setField(emailConsumer, "delay", delay);
+        ReflectionTestUtils.setField(emailConsumer, "tries", retriesLeft);
 
         doThrow(MessagingException.class).when(mailSenderImpl).testConnection();
 
@@ -134,14 +140,19 @@ public class EmailConsumerTest {
         String body = "Cuerpo de prueba";
         EmailDTO emailDTO = new EmailDTO(email, subject, body);
 
+        String sender = "test@test.com";
+        Integer retriesLeft = 3;
+        Integer delay = 30;
+        ReflectionTestUtils.setField(emailConsumer, "sender", sender);
+        ReflectionTestUtils.setField(emailConsumer, "delay", delay);
+        ReflectionTestUtils.setField(emailConsumer, "tries", retriesLeft);
+
         doThrow(MessagingException.class).when(mailSenderImpl).testConnection();
-        //when(scheduledExecutorService.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class))).thenReturn(null);
         // Act
         emailConsumer.sendEmail(emailDTO);
 
         // Assert:
         verify(mailSenderImpl, times(1)).testConnection();
-        //verify(scheduledExecutorService, times(1)).schedule(any(Runnable.class), any(Integer.class), any(TimeUnit.class)); TODO
     }
     @Test
     void retryLaterWhenRetresIs0Test() throws MessagingException { //No se como comprobarlo
@@ -151,13 +162,16 @@ public class EmailConsumerTest {
         String body = "Cuerpo de prueba";
         EmailDTO emailDTO = new EmailDTO(email, subject, body);
 
+        String sender = "test@test.com";
+        Integer retriesLeft = 0;
+        ReflectionTestUtils.setField(emailConsumer, "sender", sender);
+        ReflectionTestUtils.setField(emailConsumer, "tries", retriesLeft);
+
         doThrow(MessagingException.class).when(mailSenderImpl).testConnection();
-        //when(scheduledExecutorService.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class))).thenReturn(null);
         // Act
-        emailConsumer.sendEmail(emailDTO,0);
+        emailConsumer.sendEmail(emailDTO);
 
         // Assert:
         verify(mailSenderImpl, times(1)).testConnection();
-        //verify(scheduledExecutorService, times(1)).schedule(any(Runnable.class), any(Integer.class), any(TimeUnit.class)); TODO
     }
 }
