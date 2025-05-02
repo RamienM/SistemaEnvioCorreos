@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: SistemaEnvioCorreos
+  mail:
+    host: smtp.gmail.com  # para Outlook usar smtp.office365.com
+    port: 587
+    username: TuCorreo
+    password: TuApplicationKey
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    sender: CorreoRemitente
+  retry:
+    send:
+      delay: 30
+      tries: 3
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+rabbitmq:
+  queue: email_queue
+  exchange: email_exchange
+  routing-key: email_routing_key
+
+

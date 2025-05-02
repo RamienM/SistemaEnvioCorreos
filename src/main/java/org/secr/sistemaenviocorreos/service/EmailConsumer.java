@@ -1,5 +1,6 @@
 package org.secr.sistemaenviocorreos.service;
 
+import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.MessagingException;
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
 import org.secr.sistemaenviocorreos.service.interfaces.ConsumerInterface;
@@ -61,6 +62,8 @@ public class EmailConsumer implements ConsumerInterface {
             mailSender.send(message);
             logger.info("Correo enviado exitosamente a: " + emailDTO.email());
 
+        }catch (AuthenticationFailedException e){
+            logger.log(Level.SEVERE, "Autenticación fallida: ", e);
         } catch (MessagingException e) {
             logger.log(Level.WARNING, "No se pudo conectar al servidor SMTP: ", e);
             tries -= 1;
