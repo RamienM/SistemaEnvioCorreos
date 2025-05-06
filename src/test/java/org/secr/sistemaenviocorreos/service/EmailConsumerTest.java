@@ -304,8 +304,7 @@ public class EmailConsumerTest {
     }
 
     @Test
-    void sendEmailWhenRetryIs0Test() throws MessagingException { //No se como comprobarlo
-        // Arrange
+    void sendEmailWhenRetryIs0Test() throws MessagingException {
         String email = "test@test.com";
         String subject = "Test";
         String body = "Cuerpo de prueba";
@@ -328,7 +327,7 @@ public class EmailConsumerTest {
     }
 
     @Test
-    void rePublishInCaseOfExceptionTest() throws MessagingException { //No se como comprobarlo
+    void rePublishInCaseOfExceptionTest() throws MessagingException {
         // Arrange
         String email = "test@test.com";
         String subject = "Test";
