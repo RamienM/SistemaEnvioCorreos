@@ -16,7 +16,6 @@ spring:
   retry:
     send:
       delay: 30
-      tries: 3
   rabbitmq:
     host: localhost
     port: 5672
