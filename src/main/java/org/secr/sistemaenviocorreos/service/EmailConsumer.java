@@ -2,6 +2,7 @@ package org.secr.sistemaenviocorreos.service;
 
 import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.MessagingException;
+import org.eclipse.angus.mail.util.MailConnectException;
 import org.secr.sistemaenviocorreos.dto.PublishRabbitMQDTO;
 import org.secr.sistemaenviocorreos.service.interfaces.ConsumerInterface;
 import org.springframework.amqp.core.MessageDeliveryMode;
@@ -95,6 +96,9 @@ public class EmailConsumer implements ConsumerInterface {
             mailSender.send(message);
             logger.info("Correo enviado exitosamente a: " + rMQMessage.email());
 
+        }catch (MailConnectException e){
+            logger.log(Level.SEVERE, "No se pudo conectar con el host SMTP: ", e);
+            rePublishInCaseOfException(rMQMessage);
         }catch (AuthenticationFailedException e){
             logger.log(Level.SEVERE, "Autenticación fallida: ", e);
             rePublishInCaseOfException(rMQMessage);
@@ -107,15 +111,12 @@ public class EmailConsumer implements ConsumerInterface {
         } catch (MailSendException e) {
             logger.log(Level.SEVERE, "Error al enviar el correo: ", e);
             rePublishInCaseOfException(rMQMessage);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Ocurrió un error inesperado al enviar el correo: ", e);
+            rePublishInCaseOfException(rMQMessage);
         }
     }
 
-    /*
-     * No me gusta esta solución por el mismo motivo anterior, si se cae se pierde.
-     * Existe un plugin para docker que permite la entrada de mensajes con Delay
-     * Se podría usar otra cola, en esa cola se meten los mensajes de reintento y cada cierto tiempo se accede
-     * a los mensajes de esta
-     */
     private void rePublishInCaseOfException(PublishRabbitMQDTO rMQMessage) {
         logger.info("Rencolando correo...");
         PublishRabbitMQDTO publishRabbitMQDTO = new PublishRabbitMQDTO(rMQMessage.email(),
@@ -124,10 +125,11 @@ public class EmailConsumer implements ConsumerInterface {
                 rMQMessage.sendDate(),
                 rMQMessage.retry()-1);
 
-        scheduler.schedule(() -> rabbitTemplate.convertAndSend(exchange, routingKey, publishRabbitMQDTO, message -> {
+        rabbitTemplate.convertAndSend(exchange, routingKey, publishRabbitMQDTO, message -> {
             message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+            message.getMessageProperties().setHeader("x-delay", delay*1000); //seconds
             return message;
-        }), delay, TimeUnit.SECONDS);
+        });
 
 
         logger.info("Correo " + rMQMessage.email() + " rencolado correctamente. Intentos restantes: " + rMQMessage.retry());

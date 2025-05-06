@@ -2,6 +2,7 @@ package org.secr.sistemaenviocorreos.service;
 
 import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.MessagingException;
+import org.eclipse.angus.mail.util.MailConnectException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -18,6 +19,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.FileNotFoundException;
 import java.time.LocalDateTime;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -224,6 +226,32 @@ public class EmailConsumerTest {
     }
 
     @Test
+    void sendEmailWhenSMTPConnectionFailTest() throws MessagingException {
+        //Arrange
+        String email = "test@test.com";
+        String subject = "Test";
+        String body = "Cuerpo de prueba";
+        LocalDateTime date = LocalDateTime.now();
+        Integer retry = 3;
+
+        PublishRabbitMQDTO payload = new PublishRabbitMQDTO(email, subject, body, date, retry);
+
+
+        String sender = "test@test.com";
+        Integer delay = 30;
+        ReflectionTestUtils.setField(emailConsumer, "sender", sender);
+        ReflectionTestUtils.setField(emailConsumer, "delay", delay);
+
+        doThrow(MailConnectException.class).when(mailSenderImpl).testConnection();
+
+        //Act
+        emailConsumer.consumer(payload);
+
+        //Assert
+        verify(mailSenderImpl, times(1)).testConnection();
+    }
+
+    @Test
     void sendEmailWhenAuthenticationFailedExceptionTest() throws MessagingException {
         //Arrange
         String email = "test@test.com";
@@ -241,6 +269,32 @@ public class EmailConsumerTest {
         ReflectionTestUtils.setField(emailConsumer, "delay", delay);
 
         doThrow(AuthenticationFailedException.class).when(mailSenderImpl).testConnection();
+
+        //Act
+        emailConsumer.consumer(payload);
+
+        //Assert
+        verify(mailSenderImpl, times(1)).testConnection();
+    }
+
+    @Test
+    void sendEmailWhenOtherExceptionTest() throws MessagingException {
+        //Arrange
+        String email = "test@test.com";
+        String subject = "Test";
+        String body = "Cuerpo de prueba";
+        LocalDateTime date = LocalDateTime.now();
+        Integer retry = 3;
+
+        PublishRabbitMQDTO payload = new PublishRabbitMQDTO(email, subject, body, date, retry);
+
+
+        String sender = "test@test.com";
+        Integer delay = 30;
+        ReflectionTestUtils.setField(emailConsumer, "sender", sender);
+        ReflectionTestUtils.setField(emailConsumer, "delay", delay);
+
+        doThrow(RuntimeException.class).when(mailSenderImpl).testConnection();
 
         //Act
         emailConsumer.consumer(payload);
