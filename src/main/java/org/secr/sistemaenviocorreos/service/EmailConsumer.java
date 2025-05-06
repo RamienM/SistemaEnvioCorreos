@@ -124,11 +124,10 @@ public class EmailConsumer implements ConsumerInterface {
                 rMQMessage.sendDate(),
                 rMQMessage.retry()-1);
 
-        scheduler.schedule(() -> {
-            rabbitTemplate.convertAndSend(exchange, routingKey, publishRabbitMQDTO, message -> {
-                message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-                return message;
-            });}, delay, TimeUnit.SECONDS);
+        scheduler.schedule(() -> rabbitTemplate.convertAndSend(exchange, routingKey, publishRabbitMQDTO, message -> {
+            message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+            return message;
+        }), delay, TimeUnit.SECONDS);
 
 
         logger.info("Correo " + rMQMessage.email() + " rencolado correctamente. Intentos restantes: " + rMQMessage.retry());
