@@ -2,8 +2,10 @@ package org.secr.sistemaenviocorreos.service;
 
 import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.eclipse.angus.mail.util.MailConnectException;
 import org.secr.sistemaenviocorreos.dto.PublishRabbitMQDTO;
+import org.secr.sistemaenviocorreos.enums.EmailTemplateType;
 import org.secr.sistemaenviocorreos.service.interfaces.ConsumerInterface;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -12,9 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailSendException;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -33,6 +35,8 @@ public class EmailConsumer implements ConsumerInterface {
 
     @Autowired
     private JavaMailSender mailSender;
+    @Autowired
+    private EmailTemplateRenderer renderer;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -86,14 +90,17 @@ public class EmailConsumer implements ConsumerInterface {
             logger.info("Conexión SMTP exitosa.");
 
             //Preparamos el mail
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(sender);
-            message.setTo(rMQMessage.email());
-            message.setSubject(rMQMessage.subject());
-            message.setText(rMQMessage.message());
+            String message = renderer.render(EmailTemplateType.WELCOME, rMQMessage);
+            MimeMessage mimeMessage = mailSenderImpl.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true,"UTF-8");
+
+            helper.setFrom(sender);
+            helper.setTo(rMQMessage.email());
+            helper.setSubject(rMQMessage.subject());
+            helper.setText(message, true);
 
             logger.info("Enviando correo a: " + rMQMessage.email());
-            mailSender.send(message);
+            mailSender.send(mimeMessage);
             logger.info("Correo enviado exitosamente a: " + rMQMessage.email());
 
         }catch (MailConnectException e){
