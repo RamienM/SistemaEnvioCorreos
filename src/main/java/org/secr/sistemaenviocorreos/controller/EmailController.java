@@ -3,6 +3,7 @@ package org.secr.sistemaenviocorreos.controller;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
+import org.secr.sistemaenviocorreos.dto.ScheduledEmailDTO;
 import org.secr.sistemaenviocorreos.service.EmailPublisher;
 import org.springframework.amqp.AmqpException;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,17 @@ public class EmailController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/sendLater")
+    public ResponseEntity<Void> sendLater(@RequestBody ScheduledEmailDTO scheduledEmailDTO) {
+        try {
+            emailPublisher.publishLater(scheduledEmailDTO);
+        }catch (AmqpException e){
+            logger.warning("Error al encolar el correo.");
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
         return ResponseEntity.ok().build();
     }
 }

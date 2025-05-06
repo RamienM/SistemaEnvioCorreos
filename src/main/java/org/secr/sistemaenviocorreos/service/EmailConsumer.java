@@ -86,6 +86,7 @@ public class EmailConsumer implements ConsumerInterface {
             logger.info("Reintentando envío de correo a: " + emailDTO.email() + ". Intentos restantes: " + tries);
             sendEmail(emailDTO);};
 
+        //No me acaba de gustar, en caso de exception se pierde el mensaje?
         scheduler.schedule(retryTask, delay, TimeUnit.SECONDS);
     }
 }
