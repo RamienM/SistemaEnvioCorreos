@@ -2,11 +2,11 @@ package org.secr.sistemaenviocorreos.service;
 
 import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.eclipse.angus.mail.util.MailConnectException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,7 +15,6 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailSendException;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -23,8 +22,6 @@ import java.time.LocalDateTime;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -34,12 +31,12 @@ public class EmailConsumerTest {
     private RabbitTemplate rabbitTemplate;
     @Mock
     private JavaMailSenderImpl mailSenderImpl;
+    @Mock
+    private EmailTemplateRenderer emailTemplateRenderer;
+    @Mock
+    private MimeMessage mimeMessage;
     @InjectMocks
     private EmailConsumer emailConsumer;
-
-
-    @Captor
-    private ArgumentCaptor<SimpleMailMessage> messageCaptor; //RECOMENDADO POR GPT
 
     @Test
     void sendEmailNowTest(){
@@ -58,18 +55,19 @@ public class EmailConsumerTest {
         ReflectionTestUtils.setField(emailConsumer, "sender", sender);
         ReflectionTestUtils.setField(emailConsumer, "delay", delay);
 
-        doNothing().when(mailSenderImpl).send(any(SimpleMailMessage.class));
+        String renderedMessage = "<html>Email Body</html>";
+
+        when(emailTemplateRenderer.render(any(), eq(payload))).thenReturn(renderedMessage);
+        when(mailSenderImpl.createMimeMessage()).thenReturn(mimeMessage);
+        doNothing().when(mailSenderImpl).send(any(MimeMessage.class));
 
         //Act
         emailConsumer.consumer(payload);
 
         //Assert
-        verify(mailSenderImpl, times(1)).send(messageCaptor.capture());
-        SimpleMailMessage sent = messageCaptor.getValue();
-        assertNotNull(sent.getTo());
-        assertEquals("test@test.com", sent.getTo()[0]);
-        assertEquals("Test", sent.getSubject());
-        assertEquals("Cuerpo de prueba", sent.getText());
+        verify(mailSenderImpl, times(1)).send(any(MimeMessage.class));
+        verify(mailSenderImpl, times(1)).createMimeMessage();
+        verify(emailTemplateRenderer, times(1)).render(any(), eq(payload));
     }
 
     @Test
@@ -89,18 +87,19 @@ public class EmailConsumerTest {
         ReflectionTestUtils.setField(emailConsumer, "sender", sender);
         ReflectionTestUtils.setField(emailConsumer, "delay", delay);
 
-        doNothing().when(mailSenderImpl).send(any(SimpleMailMessage.class));
+        String renderedMessage = "<html>Email Body</html>";
+
+        when(emailTemplateRenderer.render(any(), eq(payload))).thenReturn(renderedMessage);
+        when(mailSenderImpl.createMimeMessage()).thenReturn(mimeMessage);
+        doNothing().when(mailSenderImpl).send(any(MimeMessage.class));
 
         //Act
         emailConsumer.consumer(payload);
 
         //Assert
-        verify(mailSenderImpl, times(1)).send(messageCaptor.capture());
-        SimpleMailMessage sent = messageCaptor.getValue();
-        assertNotNull(sent.getTo());
-        assertEquals("test@test.com", sent.getTo()[0]);
-        assertEquals("Test", sent.getSubject());
-        assertEquals("Cuerpo de prueba", sent.getText());
+        verify(mailSenderImpl, times(1)).send(any(MimeMessage.class));
+        verify(mailSenderImpl, times(1)).createMimeMessage();
+        verify(emailTemplateRenderer, times(1)).render(any(), eq(payload));
     }
 
     @Test
@@ -120,6 +119,10 @@ public class EmailConsumerTest {
         ReflectionTestUtils.setField(emailConsumer, "sender", sender);
         ReflectionTestUtils.setField(emailConsumer, "delay", delay);
 
+        String renderedMessage = "<html>Email Body</html>";
+
+
+
         ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
         ScheduledExecutorService schedulerMock = mock(ScheduledExecutorService.class);
         ReflectionTestUtils.setField(emailConsumer, "scheduler", schedulerMock); // solo si no puedes usar constructor
@@ -128,22 +131,19 @@ public class EmailConsumerTest {
 
         when(schedulerMock.schedule(captor.capture(), anyLong(), any()))
                 .thenReturn((ScheduledFuture) futureMock);
-
-        doNothing().when(mailSenderImpl).send(any(SimpleMailMessage.class));
-        //doNothing().when(scheduledExecutorService).schedule(captor.capture(), anyLong(), any());
+        when(emailTemplateRenderer.render(any(), eq(payload))).thenReturn(renderedMessage);
+        when(mailSenderImpl.createMimeMessage()).thenReturn(mimeMessage);
+        doNothing().when(mailSenderImpl).send(any(MimeMessage.class));
 
         //Act
         emailConsumer.consumer(payload);
         captor.getValue().run();
 
         //Assert
-        verify(mailSenderImpl, times(1)).send(messageCaptor.capture());
+        verify(mailSenderImpl, times(1)).send(any(MimeMessage.class));
+        verify(mailSenderImpl, times(1)).createMimeMessage();
+        verify(emailTemplateRenderer, times(1)).render(any(), eq(payload));
         verify(schedulerMock, times(1)).schedule(captor.capture(), anyLong(), any());
-        SimpleMailMessage sent = messageCaptor.getValue();
-        assertNotNull(sent.getTo());
-        assertEquals("test@test.com", sent.getTo()[0]);
-        assertEquals("Test", sent.getSubject());
-        assertEquals("Cuerpo de prueba", sent.getText());
     }
 
     @Test
@@ -163,13 +163,19 @@ public class EmailConsumerTest {
         ReflectionTestUtils.setField(emailConsumer, "sender", sender);
         ReflectionTestUtils.setField(emailConsumer, "delay", delay);
 
-        doThrow(MailAuthenticationException.class).when(mailSenderImpl).send(any(SimpleMailMessage.class));
+        String renderedMessage = "<html>Email Body</html>";
+
+        when(emailTemplateRenderer.render(any(), eq(payload))).thenReturn(renderedMessage);
+        when(mailSenderImpl.createMimeMessage()).thenReturn(mimeMessage);
+        doThrow(MailAuthenticationException.class).when(mailSenderImpl).send(any(MimeMessage.class));
 
         //Act
         emailConsumer.consumer(payload);
 
         //Assert
-        verify(mailSenderImpl, times(1)).send(any(SimpleMailMessage.class));
+        verify(mailSenderImpl, times(1)).send(any(MimeMessage.class));
+        verify(mailSenderImpl, times(1)).createMimeMessage();
+        verify(emailTemplateRenderer, times(1)).render(any(), eq(payload));
     }
 
     @Test
@@ -189,13 +195,19 @@ public class EmailConsumerTest {
         ReflectionTestUtils.setField(emailConsumer, "sender", sender);
         ReflectionTestUtils.setField(emailConsumer, "delay", delay);
 
-        doThrow(MailSendException.class).when(mailSenderImpl).send(any(SimpleMailMessage.class));
+        String renderedMessage = "<html>Email Body</html>";
+
+        when(emailTemplateRenderer.render(any(), eq(payload))).thenReturn(renderedMessage);
+        when(mailSenderImpl.createMimeMessage()).thenReturn(mimeMessage);
+        doThrow(MailSendException.class).when(mailSenderImpl).send(any(MimeMessage.class));
 
         //Act
         emailConsumer.consumer(payload);
 
         //Assert
-        verify(mailSenderImpl, times(1)).send(any(SimpleMailMessage.class));
+        verify(mailSenderImpl, times(1)).send(any(MimeMessage.class));
+        verify(mailSenderImpl, times(1)).createMimeMessage();
+        verify(emailTemplateRenderer, times(1)).render(any(), eq(payload));
     }
 
     @Test
