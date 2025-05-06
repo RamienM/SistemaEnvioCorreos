@@ -41,6 +41,8 @@ Los mensajes encolados deben ser persistentes en *RabbitMQ*, de modo que, ante u
 | Lombok           | Permite el uso de anotaciones permitiendo generar código más limpio |
 | Thymeleaf        | Permite la creación de plantillas para los correos                  |
 
-
+## Extras
+- Nuevo endpoint que permite el envío de correos a una fecha y hora específica
+- Uso de plantillas en el correo
 
 
