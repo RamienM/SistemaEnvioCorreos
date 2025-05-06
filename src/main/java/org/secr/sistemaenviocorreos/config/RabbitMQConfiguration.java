@@ -24,6 +24,7 @@ public class RabbitMQConfiguration {
     @Value("${rabbitmq.routing-key}")
     private String routingKey;
 
+
     @Bean
     public Queue queue() {
         return new Queue(queueName, true);
@@ -46,6 +47,7 @@ public class RabbitMQConfiguration {
                 .to(topicExchange)
                 .with(routingKey);
     }
+
 
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,

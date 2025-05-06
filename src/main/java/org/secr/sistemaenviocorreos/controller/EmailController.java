@@ -26,7 +26,7 @@ public class EmailController {
     @PostMapping("/send")
     public ResponseEntity<Void> send(@Valid  @RequestBody EmailDTO emailDTO) {
         try {
-            emailPublisher.publish(emailDTO);
+            emailPublisher.send(emailDTO);
         }catch (AmqpException e){
             logger.warning("Error al encolar el correo.");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -36,9 +36,9 @@ public class EmailController {
     }
 
     @PostMapping("/sendLater")
-    public ResponseEntity<Void> sendLater(@RequestBody ScheduledEmailDTO scheduledEmailDTO) {
+    public ResponseEntity<Void> sendLater(@Valid @RequestBody ScheduledEmailDTO scheduledEmailDTO) {
         try {
-            emailPublisher.publishLater(scheduledEmailDTO);
+            emailPublisher.sendLater(scheduledEmailDTO);
         }catch (AmqpException e){
             logger.warning("Error al encolar el correo.");
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

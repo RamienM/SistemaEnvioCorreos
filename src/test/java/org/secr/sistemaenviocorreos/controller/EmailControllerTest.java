@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
+import org.secr.sistemaenviocorreos.dto.ScheduledEmailDTO;
 import org.secr.sistemaenviocorreos.service.EmailPublisher;
 import org.springframework.amqp.AmqpException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+
+import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -39,7 +42,7 @@ public class EmailControllerTest {
         String body = "Test";
         EmailDTO emailDTO = new EmailDTO(email, subject, body);
 
-        doNothing().when(emailPublisher).publish(any(EmailDTO.class));
+        doNothing().when(emailPublisher).send(any(EmailDTO.class));
 
         //Act
         ResultActions resp = mockMvc.perform(post("/email/send")
@@ -48,7 +51,7 @@ public class EmailControllerTest {
 
         //Assert
         resp.andExpect(status().isOk());
-        verify(emailPublisher,times(1)).publish(any(EmailDTO.class));
+        verify(emailPublisher,times(1)).send(any(EmailDTO.class));
     }
 
     @Test
@@ -126,7 +129,7 @@ public class EmailControllerTest {
         String body = "Test";
         EmailDTO emailDTO = new EmailDTO(email, subject, body);
 
-        doThrow(AmqpException.class).when(emailPublisher).publish(any(EmailDTO.class));
+        doThrow(AmqpException.class).when(emailPublisher).send(any(EmailDTO.class));
 
         //Act
         ResultActions resp = mockMvc.perform(post("/email/send")
@@ -135,7 +138,146 @@ public class EmailControllerTest {
 
         //Assert
         resp.andExpect(status().is(statusError));
-        verify(emailPublisher,times(1)).publish(any(EmailDTO.class));
+        verify(emailPublisher,times(1)).send(any(EmailDTO.class));
+    }
+
+    @Test
+    void sendEmailLaterTest() throws Exception {
+        //Arrange
+        String email = "test@test.com";
+        String subject = "Test";
+        String body = "Test";
+        EmailDTO emailDTO = new EmailDTO(email, subject, body);
+        LocalDateTime timestamp = LocalDateTime.now();
+        ScheduledEmailDTO scheduledEmailDTO = new ScheduledEmailDTO(emailDTO,timestamp);
+
+        doNothing().when(emailPublisher).sendLater(any(ScheduledEmailDTO.class));
+
+        //Act
+        ResultActions resp = mockMvc.perform(post("/email/sendLater")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(scheduledEmailDTO)));
+
+        //Assert
+        resp.andExpect(status().isOk());
+        verify(emailPublisher,times(1)).sendLater(any(ScheduledEmailDTO.class));
+    }
+
+    @Test
+    void sendEmailLaterWhenEmailIsWrongException() throws Exception {
+        //Arrange
+        String email = "testtest.com";
+        String subject = "Test";
+        String body = "Test";
+        EmailDTO emailDTO = new EmailDTO(email, subject, body);
+        LocalDateTime timestamp = LocalDateTime.now();
+        ScheduledEmailDTO scheduledEmailDTO = new ScheduledEmailDTO(emailDTO,timestamp);
+
+        //Act
+        ResultActions resp = mockMvc.perform(post("/email/sendLater")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(scheduledEmailDTO)));
+
+        //Assert
+        resp.andExpect(status().is(400));
+    }
+    @Test
+    void sendEmailLaterWhenEmailIsBlanckException() throws Exception {
+        //Arrange
+        String email = "";
+        String subject = "Test";
+        String body = "Test";
+        EmailDTO emailDTO = new EmailDTO(email, subject, body);
+        LocalDateTime timestamp = LocalDateTime.now();
+        ScheduledEmailDTO scheduledEmailDTO = new ScheduledEmailDTO(emailDTO,timestamp);
+
+        //Act
+        ResultActions resp = mockMvc.perform(post("/email/sendLater")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(scheduledEmailDTO)));
+
+        //Assert
+        resp.andExpect(status().is(400));
+    }
+    @Test
+    void sendEmailLaterWhenSubjectlIsBlanckException() throws Exception {
+        //Arrange
+        String email = "test@test.com";
+        String subject = "";
+        String body = "Test";
+        EmailDTO emailDTO = new EmailDTO(email, subject, body);
+        LocalDateTime timestamp = LocalDateTime.now();
+        ScheduledEmailDTO scheduledEmailDTO = new ScheduledEmailDTO(emailDTO,timestamp);
+
+        //Act
+        ResultActions resp = mockMvc.perform(post("/email/sendLater")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(scheduledEmailDTO)));
+
+        //Assert
+        resp.andExpect(status().is(400));
+    }
+
+    @Test
+    void sendEmailLaterWhenBodylIsBlanckException() throws Exception {
+        //Arrange
+        String email = "test@test.com";
+        String subject = "Test";
+        String body = "";
+        EmailDTO emailDTO = new EmailDTO(email, subject, body);
+        LocalDateTime timestamp = LocalDateTime.now();
+        ScheduledEmailDTO scheduledEmailDTO = new ScheduledEmailDTO(emailDTO,timestamp);
+
+        //Act
+        ResultActions resp = mockMvc.perform(post("/email/sendLater")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(scheduledEmailDTO)));
+
+        //Assert
+        resp.andExpect(status().is(400));
+    }
+
+    @Test
+    void sendEmailLaterWhenTimeStampIsNullException() throws Exception {
+        //Arrange
+        String email = "test@test.com";
+        String subject = "Test";
+        String body = "";
+        EmailDTO emailDTO = new EmailDTO(email, subject, body);
+        LocalDateTime timestamp = null;
+        ScheduledEmailDTO scheduledEmailDTO = new ScheduledEmailDTO(emailDTO,timestamp);
+
+        //Act
+        ResultActions resp = mockMvc.perform(post("/email/sendLater")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(scheduledEmailDTO)));
+
+        //Assert
+        resp.andExpect(status().is(400));
+    }
+
+    @Test
+    void sendEmailLaterWhenAmqpExceptionTest() throws Exception {
+        //Arrange
+        int statusError= 500;
+
+        String email = "test@test.com";
+        String subject = "Test";
+        String body = "Test";
+        EmailDTO emailDTO = new EmailDTO(email, subject, body);
+        LocalDateTime timestamp = LocalDateTime.now();
+        ScheduledEmailDTO scheduledEmailDTO = new ScheduledEmailDTO(emailDTO,timestamp);
+
+        doThrow(AmqpException.class).when(emailPublisher).sendLater(any(ScheduledEmailDTO.class));
+
+        //Act
+        ResultActions resp = mockMvc.perform(post("/email/sendLater")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(scheduledEmailDTO)));
+
+        //Assert
+        resp.andExpect(status().is(statusError));
+        verify(emailPublisher,times(1)).sendLater(any(ScheduledEmailDTO.class));
     }
 
 }

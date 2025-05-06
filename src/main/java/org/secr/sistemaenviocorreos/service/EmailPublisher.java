@@ -1,6 +1,7 @@
 package org.secr.sistemaenviocorreos.service;
 
 import org.secr.sistemaenviocorreos.dto.EmailDTO;
+import org.secr.sistemaenviocorreos.dto.PublishRabbitMQDTO;
 import org.secr.sistemaenviocorreos.dto.ScheduledEmailDTO;
 import org.secr.sistemaenviocorreos.service.interfaces.PublisherInterface;
 import org.springframework.amqp.AmqpException;
@@ -10,11 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 @Service
@@ -23,7 +19,6 @@ public class EmailPublisher implements PublisherInterface {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final Logger logger = Logger.getLogger(EmailPublisher.class.getName());
 
     @Value("${rabbitmq.exchange}")
@@ -35,41 +30,42 @@ public class EmailPublisher implements PublisherInterface {
     /**
      * Publicación de un mensaje a una cola RabbitMQ. El mensaje se guarda de manera persistente para que en caso de caida
      * se recupere.
-     * @param emailDTO          Objeto de transferencia Email
+     * @param publishRabbitMQDTO          Objeto de transferencia
      * @throws AmqpException    Excepción lanzada cuando hay un problema con el encolamiento de un mensaje
      */
     @Override
-    public void publish(EmailDTO emailDTO) throws AmqpException {
+    public void publish(PublishRabbitMQDTO publishRabbitMQDTO) throws AmqpException {
         logger.info("Encolando correo...");
-        rabbitTemplate.convertAndSend(exchange, routingKey, emailDTO, message -> {
+        rabbitTemplate.convertAndSend(exchange, routingKey, publishRabbitMQDTO, message -> {
             message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
             return message;
         });
-        logger.info("Correo " + emailDTO.email() + " encolado correctamente");
+        logger.info("Correo " + publishRabbitMQDTO.email() + " encolado correctamente");
     }
 
+
+    public void send(EmailDTO emailDTO) {
+        PublishRabbitMQDTO message = new PublishRabbitMQDTO(emailDTO.email(),
+                emailDTO.subject(),
+                emailDTO.message(),
+                null,
+                3);
+        publish(message);
+    }
 
     /**
      * Publicación de envío de mensajes programados. Se controla el caso en el que el mensaje se tenga que enviar
      * direcamente.
      * @param scheduledEmailDTO Objeto de transferencia de Correo y Tiempo programado
      */
-    @Override
-    public void publishLater(ScheduledEmailDTO scheduledEmailDTO) {
-        LocalDateTime scheduledTime = scheduledEmailDTO.scheduled();
-        long delayMillis = Duration.between(LocalDateTime.now(), scheduledTime).toMillis();
-
-        if (delayMillis <= 0) {
-            logger.warning("La fecha/hora programada ya pasó. Enviando inmediatamente a: " + scheduledEmailDTO.email().email());
-            publish(scheduledEmailDTO.email());
-        } else {
-            logger.info("Correo programado para: " + scheduledEmailDTO.email().email() + " a las " + scheduledTime);
-
-            //No me acaba de gustar, en caso de exception se pierde el mensaje?
-            scheduler.schedule(() -> {
-                logger.info("Ejecutando envío programado a: " + scheduledEmailDTO.email().email());
-                publish(scheduledEmailDTO.email());
-            }, delayMillis, TimeUnit.MILLISECONDS);
-        }
+    public void sendLater(ScheduledEmailDTO scheduledEmailDTO) {
+        PublishRabbitMQDTO message = new PublishRabbitMQDTO(scheduledEmailDTO.email().email(),
+                scheduledEmailDTO.email().subject(),
+                scheduledEmailDTO.email().message(),
+                scheduledEmailDTO.scheduled(),
+                3);
+        publish(message);
     }
+
+
 }

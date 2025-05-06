@@ -1,9 +1,7 @@
 package org.secr.sistemaenviocorreos.service.interfaces;
 
-import org.secr.sistemaenviocorreos.dto.EmailDTO;
-import org.secr.sistemaenviocorreos.dto.ScheduledEmailDTO;
+import org.secr.sistemaenviocorreos.dto.PublishRabbitMQDTO;
 
 public interface PublisherInterface {
-    void publish(EmailDTO emailDTO);
-    void publishLater(ScheduledEmailDTO scheduledEmailDTO);
+    void publish(PublishRabbitMQDTO publishRabbitMQDTO);
 }
