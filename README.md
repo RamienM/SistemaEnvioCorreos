@@ -29,16 +29,17 @@ Los mensajes encolados deben ser persistentes en *RabbitMQ*, de modo que, ante u
 •	El destinatario es una única persona
 
 ## Tecnologías usadas
-| Tecnología         | Descripción                                                                              |
-|--------------------|------------------------------------------------------------------------------------------|
-| JAVA               | V .17                                                                                    |
-| Intellij IDEA      | Entorno de desarrollo                                                                    |
-| Spring Boot        | V.3.4.4                                                                                  |
-| Java Mail Sender   | Servicio de envío de correos                                                             |
-| RabbitMQ           | Sistema de colas                                                                         |
-| Junit y Mockito    | Para la realización de los tests                                                         |
-| GitHub             | Repositorio del código y gestión de versiones                                            |
-| Lombok             | Permite el uso de anotaciones permitiendo generar código más limpio                      |
+| Tecnología       | Descripción                                                         |
+|------------------|---------------------------------------------------------------------|
+| JAVA             | V .17                                                               |
+| Intellij IDEA    | Entorno de desarrollo                                               |
+| Spring Boot      | V.3.4.4                                                             |
+| Java Mail Sender | Servicio de envío de correos                                        |
+| RabbitMQ         | Sistema de colas                                                    |
+| Junit y Mockito  | Para la realización de los tests                                    |
+| GitHub           | Repositorio del código y gestión de versiones                       |
+| Lombok           | Permite el uso de anotaciones permitiendo generar código más limpio |
+| Thymeleaf        | Permite la creación de plantillas para los correos                  |
 
 
 
